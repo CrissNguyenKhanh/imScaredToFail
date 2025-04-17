@@ -3,6 +3,7 @@ package StudentWeb.Controller;
 import java.util.List;
 
 import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +33,6 @@ public class userController extends BaseController {
 	 @Autowired
 	private  StudentService studentService = new StudentService();
 	 
-	
-	
 	 @RequestMapping(value  = "/list-user" , method = RequestMethod.GET)
  
 	 public  List<Sinhvien> listSinhVien() {
@@ -48,8 +47,6 @@ public class userController extends BaseController {
 		 return sv;
 		 
 	 }
-	 
-	 
 	 @RequestMapping(value  = "tim-kiem" , method = RequestMethod.GET)
 	 public ModelAndView timkiem(@RequestParam("hoTen") String name ,ModelMap modelmap) {
 		 List<Sinhvien> sv = studentService.getListStuden(name);
@@ -62,20 +59,21 @@ public class userController extends BaseController {
 	 
 	 @RequestMapping(value  = "tim-kiem-full-thong-tin" , method = RequestMethod.GET)
 	 public ModelAndView timKiemFullThongTin(@RequestParam("hoTen") String name ,ModelMap modelmap) {
-		 Sinhvien SV = studentService.getCmndSinhVien(name);
-		 SinhVienFind svf = studentService.getListFind(SV);
 		 
-		 if(svf != null ) {
-			 _mvShare.setViewName("layouts/user/findFullThongTin");
-			 _mvShare.addObject("student",studentService.getListFind(SV));
-			 return _mvShare;
-		 }else {
-		  _mvShare.setViewName("layouts/user/userForm");
-			 return _mvShare;
-		 }
+			 Sinhvien SV = studentService.getCmndSinhVien(name);
+			 SinhVienFind svf = studentService.getListFind(SV);
+			  
+			 if(svf != null ) {
+				 _mvShare.setViewName("layouts/user/findFullThongTin");
+				 _mvShare.addObject("student",studentService.getListFind(SV));
+				 return _mvShare;
+			 }else {
+			  _mvShare.setViewName("layouts/user/error");
+			return _mvShare;
+			 }
+		} 
 		
-	 }
-	   
+
 	@RequestMapping(value = "/", method=RequestMethod.GET)
 	public ModelAndView Register() {
 		
@@ -87,42 +85,46 @@ public class userController extends BaseController {
 	  
 	}
 	
-	@RequestMapping(value ="Add-Student", method=RequestMethod.POST )
-	public ModelAndView CreateStudent( @ModelAttribute("student") StudentDto students   ) {
-//		 userValidator.validate(students, result);
-//	    if(result.hasErrors()) {
-//	    	_mvShare.addObject("student",new StudentDto());
-//			_mvShare.addObject("truong",studentService.getListTruong());
-//			_mvShare.addObject("nganh",studentService.getListNganh());
-//			_mvShare.setViewName("layouts/user/userForm");
-//			 return _mvShare;
-//	    	
-//	    }
-//
-		try {
-			 
-			int addStudent = studentService.addStudent(students);
-	      
-			if (addStudent == 1) {
-			    _mvShare.addObject("Status", "Thêm mới học sinh thành công");
-			} else if (addStudent == -1) {
-			    _mvShare.addObject("Status", "Thêm mới học sinh thất bại, CMND đã tồn tại");
-			    _mvShare.setViewName("layouts/user/userForm");
-			    return _mvShare;
-			} else {
-			    _mvShare.addObject("Status", "Lỗi hệ thống, vui lòng thử lại sau");
-			    _mvShare.setViewName("layouts/user/userForm");
-			    return _mvShare;
-			}
-		    
-		} catch (Exception e) {
-			 System.out.println("Lỗi khi thêm vào CSDL: " + e.getMessage());
-			    e.printStackTrace(); // In rõ lỗi ra console
-			    return _mvShare;
-		}
-		return _mvShare;
+	@RequestMapping(value = "Add-Studentvip", method = RequestMethod.POST)
+	public ModelAndView CreateStudent(@ModelAttribute("student") @Valid StudentDto students, 
+	                                  BindingResult result) {
+
+	    if (result.hasErrors()) {
+	        // Nếu có lỗi thì trả lại form cùng với danh sách trường/ngành
+	        _mvShare.addObject("student", students); // giữ lại dữ liệu đã nhập
+	        _mvShare.addObject("truong", studentService.getListTruong());
+	        _mvShare.addObject("nganh", studentService.getListNganh());
+	        _mvShare.setViewName("layouts/user/userForm");
+	        return _mvShare;
+	    }
+
+	    try {
+	        int addStudent = studentService.addStudent(students);
+            boolean checkExist = studentService.checkExistStudent(students.getSoCmnd());
+	        if (addStudent == 1) {
+	            _mvShare.addObject("Status", "Thêm mới học sinh thành công");
+	            
+	        } else if (addStudent == -1 ) {
+	        	 
+	            _mvShare.addObject("Status", "Thêm mới học sinh thất bại, CMND đã tồn tại");
+	            _mvShare.setViewName("layouts/user/userForm");
+	            return _mvShare;
+	        } else {
+	            _mvShare.addObject("Status", "Lỗi hệ thống, vui lòng thử lại sau");
+	            _mvShare.setViewName("layouts/user/userForm");
+	            return _mvShare;
+	        }
+
+	    } catch (Exception e) {
+	        System.out.println("Lỗi khi thêm vào CSDL: " + e.getMessage());
+	        e.printStackTrace();
+	        _mvShare.setViewName("layouts/user/userForm");
+	        return _mvShare;
+	    }
+
+	    return _mvShare;
 	}
-	
+
 		
 		
 		
